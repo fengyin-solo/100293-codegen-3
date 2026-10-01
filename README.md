@@ -69,6 +69,7 @@ npm run dev
 | 能效监测 | `energyeff` | 能效记录 | 记录编号、设备类型、耗能量 |
 | 档案管理 | `archive` | 设备档案 | 档案编号、所属设备、档案类别 |
 | 维保合同 | `contract` | 维保合同 | 合同编号、签约单位、维保范围 |
+| 外委资质准入 | `contractor` | 外委单位报审与派工名单 | 报审编号、外委单位、资质类别、准入状态、派工结论 |
 
 ## 约定
 
@@ -76,3 +77,19 @@ npm run dev
   `backend/app/routers/<模块>.py`，业务规则在 `backend/app/services/<模块>.py`。
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
+
+## 外委单位资质准入口径
+
+接口前缀 `/api/contractor`，规则实现在 `backend/app/services/contractor.py`，
+回归自检：`cd backend && python3 check_contractor_rules.py`。
+
+- 按「外委单位 × 资质类别」建册；准入状态只能沿 待审→已准入→已暂停→已清退
+  单向推进，已暂停回不到已准入。
+- 清退单位再进场必须重新报审：生成新轮次记录，核验清单与结论全部重来，
+  派工名单只认当前轮次。
+- 同类资质多份证明：只在「发证机关认可」的证明中取，两份打架按机关级别
+  （国家级 > 省级 > 市级 > 县级）高的那份算。
+- 材料逐项核验，缺项退回补正；补正只从断点项接着核，跳项与重核已核项都会被拦。
+- 准入结论实时同步到 `/api/contractor/dispatch/list`：未准入、已暂停、已清退、
+  资质过期一律「禁止派工/暂停派工」并给出拦截原因；派工前还有
+  `/dispatch/{id}/attempt` 闸口，杜绝先干后补。

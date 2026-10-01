@@ -26,6 +26,14 @@ for module in ROUTERS:
     app.include_router(module.router)
 
 
+@app.on_event("startup")
+def bootstrap_roster() -> None:
+    """启动时按准入名册重算派工清单，避免名单与准入结论脱节。"""
+    from app.services.contractor import bootstrap_dispatch
+
+    bootstrap_dispatch()
+
+
 @app.get("/api/health")
 def health() -> dict[str, object]:
     """健康检查：确认服务已经监听、示例数据已经就绪。"""

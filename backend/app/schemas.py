@@ -268,3 +268,15 @@ class ContractEntry(BaseModel):
     field_5: str | None = None  # 到期日期
     field_6: str | None = None  # 是否续签
     field_7: str | None = None  # 合同状态
+
+class ContractorEntry(BaseModel):
+    """外委单位资质准入报审明细结构。"""
+
+    field_0: str | None = None  # 报审编号
+    field_1: str | None = None  # 外委单位
+    field_2: str | None = None  # 资质类别
+    field_3: str | None = None  # 报审轮次
+    field_4: str | None = None  # 准入状态
+    field_5: str | None = None  # 有效证明
+    field_6: str | None = None  # 核验进度
+    field_7: str | None = None  # 派工结论

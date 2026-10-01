@@ -723,5 +723,174 @@ SEED_ROWS: dict[str, list[dict[str, Any]]] = {
   '签约日期': '2026-09-03',
   '到期日期': '2026-09-03',
   '是否续签': '维保合同样例3',
-  '合同状态': '维保合同样例3'}]
+  '合同状态': '维保合同样例3'}],
+
+
+    # 外委单位资质准入名册按「单位 × 资质类别」建册；下面几行覆盖：
+    # 有效准入、资质过期拦截、已暂停、待审缺项退回补正、清退后重新报审、
+    # 两份证明打架按高级别走。派工名单（dispatch）在服务启动时从名册重算。
+    "contractor": [],
 }
+
+
+# ---------------------------------------------------------------- 外委资质准入示例
+# 日期按服务启动日动态生成，保证「过期也不拦」的反例在任意时间都成立。
+from datetime import date as _date
+from datetime import timedelta as _timedelta
+
+def _iso(d: _date) -> str:
+    return d.isoformat()
+
+def _checklist(states: dict[str, tuple[str, str]]) -> list[dict[str, str]]:
+    return [
+        {"审核项": name, "状态": states.get(name, ("已核", "核验通过"))[0],
+         "说明": states.get(name, ("已核", "核验通过"))[1]}
+        for name in ["营业执照", "资质证书", "安全生产许可证", "人员持证名册", "工伤保险凭证"]
+    ]
+
+def _contractor_seed(today: _date) -> list[dict[str, Any]]:
+    all_ok = {name: ("已核", "核验通过") for name in
+              ["营业执照", "资质证书", "安全生产许可证", "人员持证名册", "工伤保险凭证"]}
+    return [
+        {  # 1 资质有效，可正常派工
+            "id": 1, "报审编号": "WZ-0001", "外委单位": "华鲁电梯工程有限公司",
+            "资质类别": "电梯安装维修", "round": 1, "status": "已准入",
+            "pending": False, "abnormal": False,
+            "checklist": _checklist(all_ok),
+            "certificates": [{
+                "证书编号": "TS31-2024-0188", "发证机关": "山东省市场监督管理局",
+                "机关级别": "省级", "发证日期": _iso(today.replace(year=today.year - 1)),
+                "有效期至": _iso(today.replace(year=today.year + 1)), "认可": True,
+                "提交时间": _iso(today),
+            }],
+            "effective_certificate": None,
+            "logs": [{"动作": "准入通过", "说明": "省级证明齐全，予以准入", "时间": _iso(today)}],
+        },
+        {  # 2 资质已过期：准入记录还在，但派工必须拦
+            "id": 2, "报审编号": "WZ-0002", "外委单位": "恒泰起重设备服务部",
+            "资质类别": "起重机械安装", "round": 1, "status": "已准入",
+            "pending": False, "abnormal": True,
+            "checklist": _checklist(all_ok),
+            "certificates": [{
+                "证书编号": "QZ-2021-0477", "发证机关": "某市行政审批服务局",
+                "机关级别": "市级", "发证日期": _iso(today.replace(year=today.year - 3)),
+                "有效期至": _iso(today - _timedelta(days=40)),
+                "认可": True, "提交时间": _iso(today),
+            }],
+            "effective_certificate": None,
+            "logs": [{"动作": "准入通过", "说明": "曾凭市级证明准入", "时间": _iso(today)},
+                     {"动作": "资质过期", "说明": "证明已过期，派工闸口自动拦截", "时间": _iso(today)}],
+        },
+        {  # 3 已暂停：可重新核验证明但回不到已准入
+            "id": 3, "报审编号": "WZ-0003", "外委单位": "中泰锅炉清洗有限公司",
+            "资质类别": "锅炉化学清洗", "round": 1, "status": "已暂停",
+            "pending": False, "abnormal": True,
+            "checklist": _checklist(all_ok),
+            "certificates": [{
+                "证书编号": "GL-2025-0231", "发证机关": "国家市场监督管理总局",
+                "机关级别": "国家级", "发证日期": _iso(today),
+                "有效期至": _iso(today.replace(year=today.year + 2)), "认可": True,
+                "提交时间": _iso(today),
+            }],
+            "effective_certificate": None,
+            "logs": [{"动作": "准入通过", "说明": "国家级资质，予以准入", "时间": _iso(today)},
+                     {"动作": "暂停准入", "说明": "现场违章，暂停准入且不得恢复为已准入", "时间": _iso(today)}],
+        },
+        {  # 4 待审：材料缺项已退回补正，核验停在断点项
+            "id": 4, "报审编号": "WZ-0004", "外委单位": "宏远管道工程队",
+            "资质类别": "压力管道安装", "round": 1, "status": "待审",
+            "pending": True, "abnormal": False,
+            "checklist": _checklist({
+                "营业执照": ("已核", "核验通过"),
+                "资质证书": ("已核", "核验通过"),
+                "安全生产许可证": ("缺项", "报审材料缺项，退回补正"),
+                "人员持证名册": ("待核", ""),
+                "工伤保险凭证": ("待核", ""),
+            }),
+            "certificates": [],
+            "effective_certificate": None,
+            "logs": [{"动作": "受理报审", "说明": "第 1 轮报审受理", "时间": _iso(today)},
+                     {"动作": "退回补正", "说明": "「安全生产许可证」退回补正，核验在此中断", "时间": _iso(today)}],
+        },
+        {  # 5 清退后重新报审：第 2 轮，结论全部重来
+            "id": 5, "报审编号": "WZ-0005", "外委单位": "建安无损检测有限公司",
+            "资质类别": "无损检测", "round": 2, "status": "待审",
+            "pending": True, "abnormal": False,
+            "checklist": _checklist({
+                "营业执照": ("已核", "核验通过"),
+                "资质证书": ("待核", ""),
+                "安全生产许可证": ("待核", ""),
+                "人员持证名册": ("待核", ""),
+                "工伤保险凭证": ("待核", ""),
+            }),
+            "certificates": [{
+                "证书编号": "WS-2026-0090", "发证机关": "山东省市场监督管理局",
+                "机关级别": "省级", "发证日期": _iso(today),
+                "有效期至": _iso(today.replace(year=today.year + 2)), "认可": True,
+                "提交时间": _iso(today),
+            }],
+            "effective_certificate": None,
+            "logs": [{"动作": "重新报审", "说明": "上一轮已被清退，重新报审，历史结论不沿用，全部材料逐项重核",
+                      "时间": _iso(today)}],
+        },
+        {  # 6 上一轮已清退的死信记录（同单位同类资质，与 5 对照）
+            "id": 6, "报审编号": "WZ-0005-R1", "外委单位": "建安无损检测有限公司",
+            "资质类别": "无损检测", "round": 1, "status": "已清退",
+            "pending": False, "abnormal": True,
+            "checklist": _checklist(all_ok),
+            "certificates": [{
+                "证书编号": "WS-2023-0090", "发证机关": "某市行政审批服务局",
+                "机关级别": "市级", "发证日期": _iso(today.replace(year=today.year - 3)),
+                "有效期至": _iso(today.replace(year=today.year - 1)), "认可": True,
+                "提交时间": _iso(today),
+            }],
+            "effective_certificate": None,
+            "logs": [{"动作": "清退", "说明": "出具虚假检测报告被清退，旧结论不再沿用", "时间": _iso(today)}],
+        },
+        {  # 7 两份证明打架：市级旧证 vs 省级新证，按发证机关级别高的省级算
+            "id": 7, "报审编号": "WZ-0007", "外委单位": "远大工业清洗服务有限公司",
+            "资质类别": "压力容器清洗", "round": 1, "status": "已准入",
+            "pending": False, "abnormal": False,
+            "checklist": _checklist(all_ok),
+            "certificates": [
+                {
+                    "证书编号": "QX-2024-1102", "发证机关": "某市行政审批服务局",
+                    "机关级别": "市级", "发证日期": _iso(today.replace(year=today.year - 2)),
+                    "有效期至": _iso(today.replace(year=today.year + 1)), "认可": True,
+                    "提交时间": _iso(today.replace(day=max(1, today.day - 5))),
+                },
+                {
+                    "证书编号": "QX-2026-0355", "发证机关": "山东省市场监督管理局",
+                    "机关级别": "省级", "发证日期": _iso(today),
+                    "有效期至": _iso(today.replace(year=today.year + 3)), "认可": True,
+                    "提交时间": _iso(today),
+                },
+            ],
+            "effective_certificate": None,
+            "logs": [{"动作": "登记资质证明", "说明": "两份认可证明打架，按省级那份为准", "时间": _iso(today)},
+                     {"动作": "准入通过", "说明": "按省级证明 QX-2026-0355 予以准入", "时间": _iso(today)}],
+        },
+        {  # 8 交来的证明发证机关不认可：不能作为准入依据，禁止派工
+            "id": 8, "报审编号": "WZ-0008", "外委单位": "众联叉车维保服务点",
+            "资质类别": "场车维修", "round": 1, "status": "待审",
+            "pending": True, "abnormal": False,
+            "checklist": _checklist({
+                "营业执照": ("已核", "核验通过"),
+                "资质证书": ("已核", "核验通过"),
+                "安全生产许可证": ("已核", "核验通过"),
+                "人员持证名册": ("已核", "核验通过"),
+                "工伤保险凭证": ("缺项", "报审材料缺项，退回补正"),
+            }),
+            "certificates": [{
+                "证书编号": "CC-FAKE-0001", "发证机关": "未经授权的行业协会",
+                "机关级别": "县级", "发证日期": _iso(today),
+                "有效期至": _iso(today.replace(year=today.year + 1)), "认可": False,
+                "提交时间": _iso(today),
+            }],
+            "effective_certificate": None,
+            "logs": [{"动作": "登记资质证明", "说明": "发证机关不认可，不作为准入依据", "时间": _iso(today)},
+                     {"动作": "退回补正", "说明": "「工伤保险凭证」缺项退回补正", "时间": _iso(today)}],
+        },
+    ]
+
+SEED_ROWS["contractor"] = _contractor_seed(_date.today())

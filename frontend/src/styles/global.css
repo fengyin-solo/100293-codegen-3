@@ -33,3 +33,44 @@ body { margin: 0; background: #f6f8fb; color: #1f2937; }
 .link { border: none; background: none; color: var(--brand); cursor: pointer; padding: 0; }
 .page-foot { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .error-text { color: #b42318; }
+.ok-text { color: #067647; }
+.warn-text { color: #b54708; }
+.danger-text { color: #b42318; }
+
+/* 页签 */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.tab { border: none; background: none; padding: 8px 16px; cursor: pointer; font-size: 14px; color: var(--muted); border-bottom: 2px solid transparent; }
+.tab.active { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
+
+/* 状态徽标：名单上一眼看出可用 / 暂停 / 拦截 */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; line-height: 18px; white-space: nowrap; }
+.badge-ok { background: #e7f6ec; color: #067647; border: 1px solid #a6f4c5; }
+.badge-warn { background: #fffaeb; color: #b54708; border: 1px solid #fedf89; }
+.badge-danger { background: #fef3f2; color: #b42318; border: 1px solid #fecdca; }
+.badge-pending { background: #eff4ff; color: #1d4ed8; border: 1px solid #c7d7fe; }
+.round-tag { margin-left: 6px; padding: 0 6px; border-radius: 8px; background: #eef2ff; color: #4338ca; font-size: 11px; }
+.cursor-tag { margin-left: 6px; padding: 0 6px; border-radius: 8px; background: #fffaeb; color: #b54708; font-size: 11px; }
+.cursor-row { background: #fffaeb; }
+.data-table tr.winner { background: #e7f6ec; }
+
+/* 弹窗 */
+.modal-mask { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.45); display: flex; align-items: flex-start; justify-content: center; padding: 32px 16px; overflow: auto; z-index: 50; }
+.modal { background: #fff; border-radius: 10px; padding: 18px 22px; width: 880px; max-width: 100%; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.25); }
+.small-modal { width: 480px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; }
+.modal-head h3 { margin: 0; font-size: 16px; }
+.modal-line { font-size: 13px; }
+.modal h4 { margin: 14px 0 6px; font-size: 13px; }
+.inner-table { margin-bottom: 10px; }
+.action-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.btn.warn { border-color: #fedf89; background: #fffaeb; color: #b54708; }
+.btn.danger { border-color: #fecdca; background: #fef3f2; color: #b42318; }
+.form-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.form-stack label span { display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.form-stack input[type="text"], .form-stack input:not([type]), .form-stack input[type="date"], .form-stack select { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; }
+.checkbox-line { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.log-list { list-style: none; margin: 0; padding: 0; max-height: 160px; overflow: auto; }
+.log-list li { font-size: 12px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.log-date { color: var(--muted); margin-right: 8px; }
+.modal-message { margin-top: 10px; font-size: 13px; }
+.filter-item select, .filter-item input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; min-width: 140px; }
